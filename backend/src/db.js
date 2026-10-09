@@ -30,6 +30,20 @@ db.exec(`
     note TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    jotform_submission_id TEXT UNIQUE NOT NULL,
+    area TEXT NOT NULL,
+    requester_name TEXT NOT NULL,
+    supply_id INTEGER REFERENCES supplies(id) ON DELETE SET NULL,
+    supply_name_raw TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    note TEXT,
+    status TEXT NOT NULL DEFAULT 'pendiente' CHECK (status IN ('pendiente', 'entregada', 'rechazada')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    resolved_at TEXT
+  );
 `);
 
 const existingColumns = db.prepare("PRAGMA table_info(supplies)").all().map((c) => c.name);

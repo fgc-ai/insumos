@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { db } from "./db.js";
+import { syncJotformRequests } from "./jotform.js";
 
 export const router = Router();
 
@@ -118,4 +119,74 @@ router.post("/supplies/:id/movements", (req, res) => {
 
   const updated = db.prepare("SELECT * FROM supplies WHERE id = ?").get(req.params.id);
   res.status(201).json(withStatus(updated));
+});
+
+// List supply requests (from JotForm), optionally filtered by status
+router.get("/requests", (req, res) => {
+  const { status } = req.query;
+  const rows = status
+    ? db.prepare("SELECT * FROM requests WHERE status = ? ORDER BY created_at DESC").all(status)
+    : db.prepare("SELECT * FROM requests ORDER BY created_at DESC").all();
+  res.json(rows);
+});
+
+// Pull new submissions from JotForm into the requests table
+router.post("/requests/sync", async (req, res) => {
+  try {
+    const result = await syncJotformRequests();
+    res.json(result);
+  } catch (err) {
+    res.status(502).json({ error: err.message });
+  }
+});
+
+// Mark a request as delivered: discounts stock and logs a 'salida' movement
+router.post("/requests/:id/deliver", (req, res) => {
+  const request = db.prepare("SELECT * FROM requests WHERE id = ?").get(req.params.id);
+  if (!request) return res.status(404).json({ error: "Solicitud no encontrada" });
+  if (request.status !== "pendiente") {
+    return res.status(400).json({ error: "Esta solicitud ya fue resuelta" });
+  }
+  if (!request.supply_id) {
+    return res
+      .status(400)
+      .json({ error: "No se pudo identificar el suministro en el inventario; recházala o entrégala manualmente" });
+  }
+
+  const supply = db.prepare("SELECT * FROM supplies WHERE id = ?").get(request.supply_id);
+  if (!supply) return res.status(400).json({ error: "El suministro asociado ya no existe" });
+  if (request.quantity > supply.quantity) {
+    return res.status(400).json({ error: "No hay suficiente stock para entregar esta cantidad" });
+  }
+
+  const tx = db.transaction(() => {
+    db.prepare("INSERT INTO movements (supply_id, type, quantity, note) VALUES (?, 'salida', ?, ?)").run(
+      request.supply_id,
+      request.quantity,
+      `Solicitud de ${request.area} (${request.requester_name})`
+    );
+    db.prepare("UPDATE supplies SET quantity = quantity - ? WHERE id = ?").run(
+      request.quantity,
+      request.supply_id
+    );
+    db.prepare(
+      "UPDATE requests SET status = 'entregada', resolved_at = datetime('now') WHERE id = ?"
+    ).run(req.params.id);
+  });
+  tx();
+
+  const updated = db.prepare("SELECT * FROM requests WHERE id = ?").get(req.params.id);
+  res.json(updated);
+});
+
+// Mark a request as rejected
+router.post("/requests/:id/reject", (req, res) => {
+  const result = db
+    .prepare("UPDATE requests SET status = 'rechazada', resolved_at = datetime('now') WHERE id = ? AND status = 'pendiente'")
+    .run(req.params.id);
+  if (result.changes === 0) {
+    return res.status(404).json({ error: "Solicitud no encontrada o ya resuelta" });
+  }
+  const updated = db.prepare("SELECT * FROM requests WHERE id = ?").get(req.params.id);
+  res.json(updated);
 });

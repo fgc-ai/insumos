@@ -4,6 +4,7 @@ import SupplyTable from "./components/SupplyTable";
 import SupplyFormModal from "./components/SupplyFormModal";
 import MovementModal from "./components/MovementModal";
 import HistoryPanel from "./components/HistoryPanel";
+import RequestsPanel from "./components/RequestsPanel";
 import { AlertTriangleIcon, BoxIcon, CheckCircleIcon, PlusIcon } from "./components/icons";
 
 function StatCard({ label, value, tone, icon }) {
@@ -29,6 +30,8 @@ export default function App() {
   const [supplies, setSupplies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [tab, setTab] = useState("inventario"); // "inventario" | "solicitudes"
 
   const [formTarget, setFormTarget] = useState(null); // null closed, {} new, supply = edit
   const [movementTarget, setMovementTarget] = useState(null); // { supply, type }
@@ -84,13 +87,15 @@ export default function App() {
             </h1>
             <p className="mt-1 text-sm text-gray-500">Control de stock de tóner, tinta, tambor y fusor</p>
           </div>
-          <button
-            onClick={() => setFormTarget({})}
-            className="hidden items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 sm:inline-flex"
-          >
-            <PlusIcon className="h-4 w-4" />
-            Agregar suministro
-          </button>
+          {tab === "inventario" && (
+            <button
+              onClick={() => setFormTarget({})}
+              className="hidden items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 sm:inline-flex"
+            >
+              <PlusIcon className="h-4 w-4" />
+              Agregar suministro
+            </button>
+          )}
         </div>
 
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -114,6 +119,29 @@ export default function App() {
           />
         </div>
 
+        <div className="mt-6 flex gap-2 border-b border-gray-200">
+          <button
+            onClick={() => setTab("inventario")}
+            className={`border-b-2 px-3 py-2 text-sm font-medium ${
+              tab === "inventario"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Inventario
+          </button>
+          <button
+            onClick={() => setTab("solicitudes")}
+            className={`border-b-2 px-3 py-2 text-sm font-medium ${
+              tab === "solicitudes"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Solicitudes
+          </button>
+        </div>
+
         {error && (
           <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
             {error}
@@ -121,27 +149,33 @@ export default function App() {
         )}
 
         <div className="mt-6">
-          {loading ? (
-            <p className="text-sm text-gray-500">Cargando...</p>
+          {tab === "inventario" ? (
+            loading ? (
+              <p className="text-sm text-gray-500">Cargando...</p>
+            ) : (
+              <SupplyTable
+                supplies={supplies}
+                onEdit={(s) => setFormTarget(s)}
+                onDelete={handleDelete}
+                onMovement={(supply, type) => setMovementTarget({ supply, type })}
+                onHistory={(s) => setHistoryTarget(s)}
+              />
+            )
           ) : (
-            <SupplyTable
-              supplies={supplies}
-              onEdit={(s) => setFormTarget(s)}
-              onDelete={handleDelete}
-              onMovement={(supply, type) => setMovementTarget({ supply, type })}
-              onHistory={(s) => setHistoryTarget(s)}
-            />
+            <RequestsPanel />
           )}
         </div>
       </div>
 
-      <button
-        onClick={() => setFormTarget({})}
-        aria-label="Agregar suministro"
-        className="fixed bottom-5 right-5 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 sm:hidden"
-      >
-        <PlusIcon className="h-6 w-6" />
-      </button>
+      {tab === "inventario" && (
+        <button
+          onClick={() => setFormTarget({})}
+          aria-label="Agregar suministro"
+          className="fixed bottom-5 right-5 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 sm:hidden"
+        >
+          <PlusIcon className="h-6 w-6" />
+        </button>
+      )}
 
       {formTarget !== null && (
         <SupplyFormModal

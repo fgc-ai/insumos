@@ -8,6 +8,8 @@ services:
       - ./backend/data:/app/data
     environment:
       - PORT=4000
+      - JOTFORM_API_KEY=${JOTFORM_API_KEY}
+      - JOTFORM_FORM_ID=${JOTFORM_FORM_ID}
 
   frontend:
     build: ./frontend
