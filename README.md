@@ -29,6 +29,19 @@ Los datos (base SQLite) se guardan en `backend/data/inventory.db` y persisten en
 - Registro de movimientos de entrada y salida de stock, con nota opcional.
 - Historial de movimientos por suministro.
 - Indicador visual de "stock bajo" cuando la cantidad actual llega o baja del mínimo definido.
+- Solicitudes de suministros desde las distintas áreas de la empresa vía un formulario JotForm, con pantalla de gestión (entregar/rechazar) que descuenta stock automáticamente.
+
+## Solicitudes de suministros (JotForm)
+
+Las áreas piden suministros desde este formulario: https://form.jotform.com/262813892867069
+
+El backend sincroniza los envíos del formulario cada 60 segundos (o al tocar "Actualizar desde JotForm" en la pestaña **Solicitudes** de la app). Para habilitar la sincronización:
+
+1. Copia `.env.example` a `.env` en la raíz del proyecto.
+2. Genera una API Key en https://www.jotform.com/myaccount/api y complétala en `.env` (`JOTFORM_API_KEY=...`). El `JOTFORM_FORM_ID` ya viene con el formulario actual.
+3. Reinicia el backend: `docker compose up -d backend`.
+
+`.env` está excluido del repositorio (`.gitignore`) porque contiene una credencial.
 
 ## Próximos pasos posibles
 - Asociar suministros a impresoras específicas y proveedores.
