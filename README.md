@@ -29,11 +29,14 @@ Los datos (base SQLite) se guardan en `backend/data/inventory.db` y persisten en
 - Registro de movimientos de entrada y salida de stock, con nota opcional.
 - Historial de movimientos por suministro.
 - Indicador visual de "stock bajo" cuando la cantidad actual llega o baja del mínimo definido.
-- Solicitudes de suministros desde las distintas áreas de la empresa vía un formulario JotForm, con pantalla de gestión (entregar/rechazar) que descuenta stock automáticamente.
+- Solicitudes de suministros desde las distintas áreas de la empresa vía un formulario JotForm o la página interna `/solicitar`, con pantalla de gestión (entregar/rechazar) que descuenta stock automáticamente.
 
-## Solicitudes de suministros (JotForm)
+## Solicitudes de suministros
 
-Las áreas piden suministros desde este formulario: https://form.jotform.com/262813892867069
+Las áreas pueden pedir suministros de dos formas, que llegan a la misma bandeja de gestión:
+
+1. **Página interna:** http://localhost:5173/solicitar — formulario simple (sin acceso al resto de la app) que crea la solicitud directamente en la base de datos.
+2. **Formulario JotForm:** https://form.jotform.com/262813892867069
 
 El backend sincroniza los envíos del formulario cada 60 segundos (o al tocar "Actualizar desde JotForm" en la pestaña **Solicitudes** de la app). Para habilitar la sincronización:
 

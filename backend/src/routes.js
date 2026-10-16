@@ -130,6 +130,37 @@ router.get("/requests", (req, res) => {
   res.json(rows);
 });
 
+// Create a supply request directly from the internal public page (not via JotForm)
+router.post("/requests", (req, res) => {
+  const { area, requester_name, supply_id, quantity, note } = req.body;
+  if (!area || !String(area).trim()) {
+    return res.status(400).json({ error: "El área es requerida" });
+  }
+  if (!requester_name || !String(requester_name).trim()) {
+    return res.status(400).json({ error: "El nombre de quien solicita es requerido" });
+  }
+  const supply = db.prepare("SELECT * FROM supplies WHERE id = ?").get(supply_id);
+  if (!supply) {
+    return res.status(400).json({ error: "Debes seleccionar un suministro válido" });
+  }
+  const qty = Number(quantity);
+  if (!Number.isFinite(qty) || qty <= 0) {
+    return res.status(400).json({ error: "La cantidad debe ser un número positivo" });
+  }
+
+  const submissionId = `interna-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const result = db
+    .prepare(
+      `INSERT INTO requests
+         (jotform_submission_id, area, requester_name, supply_id, supply_name_raw, quantity, note, source)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'interna')`
+    )
+    .run(submissionId, area.trim(), requester_name.trim(), supply.id, supply.name, qty, note?.trim() || null);
+
+  const created = db.prepare("SELECT * FROM requests WHERE id = ?").get(result.lastInsertRowid);
+  res.status(201).json(created);
+});
+
 // Pull new submissions from JotForm into the requests table
 router.post("/requests/sync", async (req, res) => {
   try {

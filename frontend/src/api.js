@@ -24,6 +24,7 @@ export const api = {
   createMovement: (id, data) =>
     request(`/supplies/${id}/movements`, { method: "POST", body: JSON.stringify(data) }),
   listRequests: (status) => request(status ? `/requests?status=${status}` : "/requests"),
+  createRequest: (data) => request("/requests", { method: "POST", body: JSON.stringify(data) }),
   syncRequests: () => request("/requests/sync", { method: "POST" }),
   deliverRequest: (id) => request(`/requests/${id}/deliver`, { method: "POST" }),
   rejectRequest: (id) => request(`/requests/${id}/reject`, { method: "POST" }),

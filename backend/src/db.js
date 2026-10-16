@@ -46,15 +46,20 @@ db.exec(`
   );
 `);
 
-const existingColumns = db.prepare("PRAGMA table_info(supplies)").all().map((c) => c.name);
-const newColumns = {
+const existingSupplyColumns = db.prepare("PRAGMA table_info(supplies)").all().map((c) => c.name);
+const newSupplyColumns = {
   model_code: "TEXT",
   brand: "TEXT",
   compatibility: "TEXT",
   notes: "TEXT",
 };
-for (const [column, type] of Object.entries(newColumns)) {
-  if (!existingColumns.includes(column)) {
+for (const [column, type] of Object.entries(newSupplyColumns)) {
+  if (!existingSupplyColumns.includes(column)) {
     db.exec(`ALTER TABLE supplies ADD COLUMN ${column} ${type}`);
   }
+}
+
+const existingRequestColumns = db.prepare("PRAGMA table_info(requests)").all().map((c) => c.name);
+if (!existingRequestColumns.includes("source")) {
+  db.exec("ALTER TABLE requests ADD COLUMN source TEXT NOT NULL DEFAULT 'jotform'");
 }
