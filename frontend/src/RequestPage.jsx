@@ -14,12 +14,34 @@ const AREAS = [
   "Prevencion",
   "RRHH",
   "IT",
+  "Porteria",
+  "Of. Ninoska",
+  "zArea test 001",
 ];
+
+// Qué suministros puede pedir cada área. Si se renombra un suministro en el
+// panel de administración, hay que actualizar también los nombres aquí.
+const AREA_SUPPLIES = {
+  Administracion: ["Tóner TN-3499", "Drum DR3460"],
+  Calidad: ["Tóner TN-3499", "Drum DR3460"],
+  Comercial: ["Tóner TN-3499", "Drum DR3460"],
+  Contabilidad: ["Tóner TN-3499", "Drum DR3460"],
+  Gerencia: ["Tóner TN-3499", "Drum DR3460"],
+  Logistica: ["Tóner TN-3499", "Drum DR3460"],
+  Mantencion: ["Drum DR-1060", "Tóner Negro TN-1060"],
+  Operaciones: ["Tóner TN-3499", "Drum DR3460"],
+  Prevencion: ["Tóner TN-3499", "Drum DR3460"],
+  RRHH: ["Tóner TN-3499", "Drum DR3460"],
+  IT: ["Tóner TN-3499", "Drum DR3460"],
+  Porteria: ["Drum DR-2340", "Tóner Negro TN2370"],
+  "Of. Ninoska": ["Tóner TN3479", "Drum DR3460"],
+  "zArea test 001": ["Toner test001", "Drum test001"],
+};
 
 export default function RequestPage() {
   const [supplies, setSupplies] = useState([]);
   const [loadingSupplies, setLoadingSupplies] = useState(true);
-  const [form, setForm] = useState({ area: "", requester_name: "", supply_id: "", quantity: 1, note: "" });
+  const [form, setForm] = useState({ area: "", requester_name: "", supply_ids: [], quantity: 1, note: "" });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
@@ -36,16 +58,42 @@ export default function RequestPage() {
     setForm((f) => ({ ...f, [field]: value }));
   }
 
+  function updateArea(area) {
+    setForm((f) => ({ ...f, area, supply_ids: [] }));
+  }
+
+  function toggleSupply(id) {
+    setForm((f) => ({
+      ...f,
+      supply_ids: f.supply_ids.includes(id)
+        ? f.supply_ids.filter((x) => x !== id)
+        : [...f.supply_ids, id],
+    }));
+  }
+
+  const allowedSupplyNames = form.area ? AREA_SUPPLIES[form.area] ?? [] : [];
+  const filteredSupplies = form.area
+    ? supplies.filter((s) => allowedSupplyNames.includes(s.name))
+    : [];
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
-    if (!form.area.trim() || !form.requester_name.trim() || !form.supply_id) {
-      setError("Completa área, nombre y suministro");
+    if (!form.area.trim() || !form.requester_name.trim() || form.supply_ids.length === 0) {
+      setError("Completa área, nombre y al menos un suministro");
       return;
     }
     try {
       setSubmitting(true);
-      await api.createRequest(form);
+      for (const supply_id of form.supply_ids) {
+        await api.createRequest({
+          area: form.area,
+          requester_name: form.requester_name,
+          supply_id,
+          quantity: form.quantity,
+          note: form.note,
+        });
+      }
       setSent(true);
     } catch (err) {
       setError(err.message);
@@ -65,7 +113,7 @@ export default function RequestPage() {
           </p>
           <button
             onClick={() => {
-              setForm({ area: "", requester_name: "", supply_id: "", quantity: 1, note: "" });
+              setForm({ area: "", requester_name: "", supply_ids: [], quantity: 1, note: "" });
               setSent(false);
             }}
             className="mt-5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
@@ -86,12 +134,21 @@ export default function RequestPage() {
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-3">
-          <div>
+           <div>
+            <label className="block text-sm font-medium text-gray-600">Tu nombre</label>
+            <input
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              value={form.requester_name}
+              onChange={(e) => update("requester_name", e.target.value)}
+              placeholder="Nombre y apellido"
+            />
+          </div>
+		  <div>
             <label className="block text-sm font-medium text-gray-600">Área</label>
             <select
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               value={form.area}
-              onChange={(e) => update("area", e.target.value)}
+              onChange={(e) => updateArea(e.target.value)}
             >
               <option value="">Selecciona un área</option>
               {AREAS.map((a) => (
@@ -102,32 +159,31 @@ export default function RequestPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600">Tu nombre</label>
-            <input
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              value={form.requester_name}
-              onChange={(e) => update("requester_name", e.target.value)}
-              placeholder="Nombre y apellido"
-            />
-          </div>
-          <div>
             <label className="block text-sm font-medium text-gray-600">Suministro</label>
-            <select
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              value={form.supply_id}
-              onChange={(e) => update("supply_id", e.target.value)}
-              disabled={loadingSupplies}
-            >
-              <option value="">{loadingSupplies ? "Cargando..." : "Selecciona un suministro"}</option>
-              {supplies.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+            {loadingSupplies ? (
+              <p className="mt-1 text-sm text-gray-400">Cargando...</p>
+            ) : !form.area ? (
+              <p className="mt-1 text-sm text-gray-400">Primero selecciona un área</p>
+            ) : filteredSupplies.length === 0 ? (
+              <p className="mt-1 text-sm text-gray-400">No hay suministros definidos para esta área</p>
+            ) : (
+              <div className="mt-1 space-y-1 rounded-lg border border-gray-300 p-2">
+                {filteredSupplies.map((s) => (
+                  <label key={s.id} className="flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={form.supply_ids.includes(s.id)}
+                      onChange={() => toggleSupply(s.id)}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    {s.name}
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600">Cantidad</label>
+            <label className="block text-sm font-medium text-gray-600">Cantidad (por cada suministro marcado)</label>
             <input
               type="number"
               min="1"
