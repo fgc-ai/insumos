@@ -6,6 +6,7 @@ services:
     volumes:
       - ./backend/src:/app/src
       - ./backend/data:/app/data
+      - ./backend/public:/app/public
     environment:
       - PORT=4000
       - JOTFORM_API_KEY=${JOTFORM_API_KEY}
