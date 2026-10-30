@@ -27,7 +27,7 @@ const AREA_SUPPLIES = {
   Comercial: ["Tóner TN-3499", "Drum DR3460"],
   Contabilidad: ["Tóner TN-3499", "Drum DR3460"],
   Gerencia: ["Tóner TN-3499", "Drum DR3460"],
-  Logistica: ["Tóner TN-3499", "Drum DR3460"],
+  Logistica: ["Tóner TN-3499", "Drum DR3460", "Tóner Negro TN2370", "Drum DR-2340"],
   Mantencion: ["Drum DR-1060", "Tóner Negro TN-1060"],
   Operaciones: ["Tóner TN-3499", "Drum DR3460"],
   Prevencion: ["Tóner TN-3499", "Drum DR3460"],
