@@ -6,14 +6,28 @@ solo proceso Node que sirve la API (`/api/*`) y el frontend compilado
 (todo lo demás) desde el mismo puerto. Por eso el backend ahora sirve
 también los archivos estáticos de `backend/public` (ver `backend/src/index.js`).
 
-## Paquete listo para subir
+## Generar el paquete para subir
 
-Ya generado en:
+Con la app corriendo en Docker (`docker compose up -d`), ejecuta:
 ```
-C:\Users\fgacitua\AppData\Local\Temp\claude\R--Inventario-Impresoras\27f48748-bc30-4971-9e71-3a92e328d9b9\scratchpad\inventario-app-cpanel.zip
+powershell -ExecutionPolicy Bypass -File scripts\make-deploy-zip.ps1
 ```
-Contiene: `package.json`, `src/` (backend) y `public/` (frontend ya compilado).
-No incluye `node_modules` ni la base de datos: se generan en el servidor.
+Esto compila el frontend, hace checkpoint de la base SQLite (WAL ->
+`inventory.db`) y genera `inventario-app-cpanel.zip` en la raíz del
+repo con: `package.json`, `src/` (backend), `public/` (frontend
+compilado) y `data/inventory.db` (los datos actuales).
+
+**Importante:** no uses `Compress-Archive` de PowerShell a mano para
+este zip — genera las rutas internas con `\` (separador de Windows)
+en vez de `/`, y al extraer en el servidor Linux de cPanel los
+archivos quedan planos con nombres literales como `src\db.js` en vez
+de dentro de una carpeta `src/`. El script ya resuelve esto usando
+`System.IO.Compression` directamente con separadores `/`.
+
+Si vas a subir el paquete por primera vez a un servidor sin datos
+previos, está bien que incluya `data/inventory.db`. Si el servidor ya
+tiene datos propios más recientes, no sobrescribas esa carpeta al
+extraer (o extrae todo excepto `data/`).
 
 ## Pasos en cPanel
 
@@ -62,11 +76,8 @@ No incluye `node_modules` ni la base de datos: se generan en el servidor.
 
 ## Cómo actualizar la app después de un cambio
 
-1. En local: `docker compose exec frontend npm run build` (compila a `dist`
-   dentro del contenedor).
-2. `docker cp inventario_impresoras-frontend-1:/app/dist backend/public`
-   (reemplaza `backend/public` con el build nuevo).
-3. Vuelve a comprimir `package.json` + `src/` + `public/` en un zip.
-4. Súbelo por File Manager sobre la misma carpeta (sobrescribe) y extrae.
-5. Si cambiaste dependencias en `package.json`, click **Run NPM Install**.
-6. Click **Restart** en Setup Node.js App.
+1. Con Docker corriendo, ejecuta `scripts\make-deploy-zip.ps1` (ver
+   arriba) para regenerar `inventario-app-cpanel.zip` actualizado.
+2. Súbelo por File Manager sobre la misma carpeta (sobrescribe) y extrae.
+3. Si cambiaste dependencias en `package.json`, click **Run NPM Install**.
+4. Click **Restart** en Setup Node.js App.
